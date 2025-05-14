@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Carte Interactive - Multi Fonds de Carte</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; }
+    header {
+      background-color: #F0E222;
+      color: #333333;
+      padding: 15px;
+      text-align: center;
+      font-size: 1.8em;
+    }
+    #map { height: 90vh; width: 100%; }
+    .legend {
+      position: absolute;
+      bottom: 30px;
+      left: 10px;
+      background: white;
+      padding: 10px;
+      font-size: 0.9em;
+      line-height: 1.5;
+      border: 1px solid #ccc;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      z-index: 1000;
+    }
+    .legend i {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      margin-right: 6px;
+      background: #e8718d;
+    }
+   
+  </style>
+</head>
+<body>
+
+  <header>Carte Interactive Zones d'activités</header>
+  <div id="map"></div>
+
+  <div class="legend">
+    <strong>Légende</strong><br />
+    <i></i> Parcelle
+  </div>
+
+  
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map').setView([2, 2], 2);
+
+    // Fonds de carte disponibles
+    const baseMaps = {
+      "OpenStreetMap": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+      }),
+
+      "Topo (Esri)": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles © Esri'
+      }),
+
+      "Satellite (Esri)": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles © Esri'
+      }),
+
+      "Relief (Stamen Terrain)": L.tileLayer('https://stamen-tiles.a.ssl.fastly.net/terrain/{z}/{x}/{y}.jpg', {
+        attribution: 'Map tiles by Stamen Design'
+      }),
+
+      "Toner (Noir & Blanc)": L.tileLayer('https://stamen-tiles.a.ssl.fastly.net/toner-lite/{z}/{x}/{y}.png', {
+        attribution: 'Map tiles by Stamen Design'
+      })
+    };
+
+    // Ajoute le fond de carte par défaut
+    baseMaps["OpenStreetMap"].addTo(map);
+
+    // Ajoute le contrôle de sélection
+    L.control.layers(baseMaps).addTo(map);
+
+    // Chargement de la couche GeoJSON
+    fetch('map.geojson')
+      .then(response => response.json())
+      .then(data => {
+        const geoLayer = L.geoJSON(data, {
+          onEachFeature: function (feature, layer) {
+            layer.on('click', function (e) {
+              const props = feature.properties;
+              let content = "<strong>Attributs :</strong><br><table>";
+              for (let key in props) {
+                content += `<tr><td><strong>${key}</strong></td><td>${props[key]}</td></tr>`;
+              }
+              content += "</table>";
+              layer.bindPopup(content).openPopup(e.latlng);
+            });
+          },
+          style: {
+            color: "#e8718d",
+            weight: 2
+          }
+        }).addTo(map);
+
+        map.fitBounds(geoLayer.getBounds());
+      })
+      .catch(error => {
+        console.error('Erreur chargement GeoJSON :', error);
+        alert('Erreur chargement du fichier GeoJSON.');
+      });
+  </script>
+</body>
+</html>
